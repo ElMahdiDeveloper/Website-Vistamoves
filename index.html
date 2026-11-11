@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vista Moves</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* Plan: één visuele wereld in de logokleuren (diep bordeaux + signaalrood).
+   Layout: links uitgelijnde secties, logo als anker in de hero, stages als twee kaarten, trainers met portret. */
+:root{
+  --bg:#2A0805;          /* diepste bordeaux, pagina-achtergrond */
+  --surface:#6F130B;     /* logo-achtergrond, voor vlakken */
+  --line:#A52A1E;        /* omlijning uit het logo */
+  --accent:#E5392A;      /* de M en de V */
+  --ink:#F6E9E6;         /* tekst */
+  --muted:#D4A9A2;       /* secundaire tekst */
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+a{color:var(--ink)}
+img,svg{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1.02;text-wrap:balance;margin:0}
+h1{font-size:clamp(44px,7vw,88px)}
+h2{font-size:clamp(34px,4.5vw,52px)}
+h3{font-size:28px;letter-spacing:.03em}
+p{margin:0;max-width:62ch}
+.lede{font-size:19px;color:var(--muted)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.kicker{font-family:var(--display);font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-size:15px}
+
+/* navigatie */
+/* sticky navbar: blijft bovenaan plakken tijdens het scrollen */
+header{position:sticky;top:0;z-index:50;background:rgba(42,8,5,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid rgba(165,42,30,.45)}
+/* ankerlinks (#stages, …) niet onder de navbar laten verdwijnen */
+section{scroll-margin-top:72px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-family:var(--display);font-weight:600;font-size:22px;letter-spacing:.14em;text-transform:uppercase}
+.brand svg{width:44px;height:44px}
+.nav ul{display:flex;gap:24px;list-style:none;margin:0;padding:0;flex-wrap:wrap}
+.nav ul a{text-decoration:none;font-weight:500;color:var(--muted)}
+.nav ul a:hover{color:var(--ink)}
+
+/* burgermenu: verborgen op brede schermen */
+.burger{display:none;width:44px;height:44px;padding:10px;background:none;border:1px solid var(--line);border-radius:2px;cursor:pointer;flex-direction:column;justify-content:space-between}
+.burger span{display:block;height:2px;background:var(--ink);transition:transform .25s ease,opacity .2s ease}
+/* open: de drie streepjes worden een kruisje */
+.burger[aria-expanded="true"] span:nth-child(1){transform:translateY(10px) rotate(45deg)}
+.burger[aria-expanded="true"] span:nth-child(2){opacity:0}
+.burger[aria-expanded="true"] span:nth-child(3){transform:translateY(-10px) rotate(-45deg)}
+
+@media (max-width:640px){
+  .nav{flex-wrap:nowrap;position:relative;padding-top:10px;padding-bottom:10px}
+  .brand svg{width:38px;height:38px}
+  .brand{font-size:20px}
+  .burger{display:flex}
+  /* het menu klapt open als paneel onder de navbar */
+  .nav ul{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:0;
+          background:var(--bg);border-bottom:1px solid var(--line);padding:8px 24px 16px}
+  .nav ul.open{display:flex}
+  .nav ul a{display:block;padding:14px 0;font-family:var(--display);font-size:26px;font-weight:600;
+            text-transform:uppercase;letter-spacing:.06em;color:var(--ink);border-bottom:1px solid rgba(165,42,30,.35)}
+  #intro{scroll-margin-top:76px}
+}
+
+/* knoppen */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 24px;border-radius:2px;font-weight:700;text-decoration:none;font-family:var(--body);font-size:16px;border:2px solid var(--accent);cursor:pointer}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{background:#c92c1e;border-color:#c92c1e}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:rgba(229,57,42,.12)}
+
+/* hero */
+.hero{padding:72px 0 80px}
+.hero-grid{display:grid;grid-template-columns:1.25fr .9fr;gap:48px;align-items:center}
+.hero h1 span{color:var(--accent)}
+.stack{display:flex;flex-direction:column;gap:24px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.splash{justify-self:end;width:100%;max-width:420px;display:block;text-decoration:none;cursor:default}
+.logo-big{width:100%;display:block}
+.splash-hint{display:none}
+.tags{display:flex;gap:8px;flex-wrap:wrap;list-style:none;padding:0;margin:0}
+.tags li{border:1px solid var(--line);padding:4px 12px;font-size:14px;color:var(--muted)}
+
+/* secties */
+section{padding:80px 0;border-top:1px solid rgba(165,42,30,.35)}
+.head{display:flex;flex-direction:column;gap:16px;margin-bottom:40px}
+
+/* drie pijlers */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;list-style:none;padding:0;margin:0}
+.pillars li{border-left:4px solid var(--line);padding:8px 24px;display:flex;flex-direction:column;gap:8px}
+.pillars li:first-child{border-left-color:var(--accent)}
+.pillars strong{font-family:var(--display);font-size:30px;text-transform:uppercase;letter-spacing:.04em}
+.pillars span{color:var(--muted)}
+
+/* aanbod */
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:72px 1fr 1.3fr;gap:24px;padding:28px 0;border-top:1px solid rgba(165,42,30,.45);align-items:start}
+.row:last-child{border-bottom:1px solid rgba(165,42,30,.45)}
+.num{font-family:var(--display);font-weight:700;font-size:40px;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums}
+.row p{color:var(--muted)}
+
+/* stages */
+.camps{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.camp{background:var(--surface);border:1px solid var(--line);padding:32px;display:flex;flex-direction:column;gap:18px}
+.camp .badge{align-self:flex-start;font-family:var(--display);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:14px;padding:4px 10px;background:var(--accent);color:#fff}
+.camp .badge.past{background:transparent;border:1px solid var(--muted);color:var(--muted)}
+.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 20px}
+.facts dt{font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:600}
+.camp .facts dt{color:#FFB3A8}
+.facts dd{margin:0;font-variant-numeric:tabular-nums}
+.price{font-family:var(--display);font-size:44px;font-weight:700;line-height:1}
+.price small{font-family:var(--body);font-size:15px;font-weight:400;color:var(--muted);margin-left:6px}
+.bring{margin-top:24px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;list-style:none;padding:0}
+.bring li{border:1px solid var(--line);padding:4px 12px;font-size:14px}
+.bring li:first-child{border:0;padding-left:0;font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:600;font-size:15px}
+
+/* trainers */
+.coaches{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.coach{display:flex;flex-direction:column;gap:16px}
+.coach img{width:100%;aspect-ratio:1/1;object-fit:cover;border:1px solid var(--line);display:block}
+.coach .role{color:var(--accent);font-family:var(--display);text-transform:uppercase;letter-spacing:.14em;font-weight:600}
+.coach p{color:var(--muted)}
+.coach blockquote{margin:0;padding-left:16px;border-left:3px solid var(--accent);color:var(--ink);font-weight:500}
+.diploma{margin-top:32px;padding:18px 24px;border:1px solid var(--line);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.diploma strong{font-family:var(--display);font-size:24px;text-transform:uppercase;letter-spacing:.06em}
+
+/* contact */
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+.places{display:grid;gap:16px}
+.place{border-left:4px solid var(--accent);padding:4px 0 4px 20px}
+.place + .place{border-left-color:var(--line)}
+.place strong{font-family:var(--display);font-size:26px;text-transform:uppercase;letter-spacing:.04em;display:block}
+.place span{color:var(--muted)}
+
+/* sfeer: galerij met foto's en video's */
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:220px;gap:12px}
+.gallery .tile{position:relative;overflow:hidden;border:1px solid var(--line);background:var(--surface);margin:0}
+.gallery .tile.wide{grid-column:span 2}
+.gallery .tile.tall{grid-row:span 2}
+.gallery img,.gallery video{width:100%;height:100%;object-fit:cover;display:block}
+.gallery figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;font-size:14px;background:linear-gradient(transparent,rgba(42,8,5,.85))}
+/* lege plek: zolang er geen foto is, toont de tegel wat er moet komen */
+.tile.empty{border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);text-align:center;padding:16px}
+.tile.empty svg{width:36px;height:36px;stroke:var(--accent);fill:none;stroke-width:1.8}
+.tile.empty span{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:15px}
+
+/* ervaringen van ouders */
+.reviews{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.review{border-top:4px solid var(--accent);padding-top:20px;display:flex;flex-direction:column;gap:12px;margin:0}
+.review blockquote{margin:0;font-size:19px;line-height:1.5}
+.review figcaption{color:var(--muted);font-size:14px}
+.reviews-empty{border:1px dashed var(--line);padding:32px;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
+
+@media (max-width:860px){
+  .gallery{grid-template-columns:1fr 1fr;grid-auto-rows:180px}
+  .reviews{grid-template-columns:1fr}
+}
+
+footer{padding:32px 0;border-top:1px solid rgba(165,42,30,.45);color:var(--muted);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media (max-width:860px){
+  .hero-grid,.camps,.coaches,.contact-grid{grid-template-columns:1fr}
+  /* MOBIEL: navbar zweeft over de pagina, logo vult het eerste scherm */
+  header{position:fixed;left:0;right:0}
+  .hero{padding-top:0}
+  .splash{order:-1;justify-self:stretch;max-width:none;width:100%;height:100vh;height:100svh;margin:0;
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;cursor:pointer}
+  .splash .logo-big{width:min(72vw,340px)}
+  .splash-hint{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);
+               font-family:var(--display);text-transform:uppercase;letter-spacing:.2em;font-size:14px}
+  .splash-hint svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:2}
+  #intro{scroll-margin-top:96px}
+  .row{grid-template-columns:56px 1fr}
+  .row p{grid-column:2}
+  .pillars{grid-template-columns:1fr;gap:16px}
+  .coach img{max-width:420px}
+}
+@media (max-width:480px){
+  .camp{padding:24px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- Het logo één keer definiëren en daarna hergebruiken via <use> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <path id="arcTop" d="M 210 240 A 90 90 0 0 1 390 240"/>
+    <path id="arcBottom" d="M 200 362 A 100 100 0 0 0 400 362"/>
+    <symbol id="vm-logo" viewBox="0 0 600 600">
+      <circle cx="300" cy="300" r="300" fill="#6F130B"/>
+      <rect x="163" y="99" width="274" height="402" rx="137" fill="none" stroke="#A52A1E" stroke-width="2"/>
+      <rect x="171" y="107" width="258" height="386" rx="129" fill="none" stroke="#A52A1E" stroke-width="1.5"/>
+      <line x1="188" y1="268" x2="188" y2="342" stroke="#C2301F" stroke-width="2"/>
+      <line x1="412" y1="268" x2="412" y2="342" stroke="#C2301F" stroke-width="2"/>
+      <g font-family="Poppins, Montserrat, 'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="500" letter-spacing="5" fill="#C2301F">
+        <text text-anchor="middle"><textPath href="#arcTop" startOffset="50%">VISTA MOVES</textPath></text>
+        <text text-anchor="middle"><textPath href="#arcBottom" startOffset="50%">VISTA MOVES</textPath></text>
+      </g>
+      <polyline points="227,215 300,276 373,215" fill="none" stroke="#E5392A" stroke-width="10" stroke-linejoin="miter" stroke-miterlimit="10"/>
+      <polyline points="223,390 223,282 300,348 377,282 377,390" fill="none" stroke="#E5392A" stroke-width="11" stroke-linejoin="miter" stroke-miterlimit="10"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Vista Moves, naar boven">
+      <!-- Logo voluit (geen <use>), zodat het net als het grote logo kan intekenen -->
+      <svg id="navLogo" viewBox="0 0 600 600" aria-hidden="true">
+        <circle class="disc" cx="300" cy="300" r="300" fill="#6F130B"/>
+        <rect class="draw" x="163" y="99" width="274" height="402" rx="137" fill="none" stroke="#A52A1E" stroke-width="8"/>
+        <polyline class="draw mark" points="227,215 300,276 373,215" fill="none" stroke="#E5392A" stroke-width="22" stroke-linejoin="miter" stroke-miterlimit="10"/>
+        <polyline class="draw mark" points="223,390 223,282 300,348 377,282 377,390" fill="none" stroke="#E5392A" stroke-width="24" stroke-linejoin="miter" stroke-miterlimit="10"/>
+      </svg>
+      <span class="brand-name">Vista Moves</span>
+    </a>
+    <nav aria-label="Hoofdmenu">
+      <!-- Burgerknop: enkel zichtbaar op smalle schermen. aria-expanded vertelt schermlezers of het menu open is. -->
+      <button class="burger" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menu openen">
+        <span></span><span></span><span></span>
+      </button>
+      <ul id="menu">
+        <li><a href="#aanbod">Aanbod</a></li>
+        <li><a href="#stages">Stages</a></li>
+        <li><a href="#trainers">Trainers</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div class="stack" id="intro">
+        <span class="kicker">Techniektraining voor jonge voetballers</span>
+        <h1>Techniek als <span>fundament</span></h1>
+        <p class="lede">Vista Moves helpt jonge voetballers groeien met training op maat en in kleine groepjes. Veel balcontacten, gerichte techniek en de mentaliteit van een topsporter, met plezier als vertrekpunt.</p>
+        <div class="cta">
+          <a class="btn primary" href="#contact">Schrijf je in</a>
+          <a class="btn ghost" href="#stages">Bekijk de stages</a>
+        </div>
+        <ul class="tags" aria-label="Kerngegevens">
+          <li>Kleine groepjes</li>
+          <li>UEFA B-gediplomeerd</li>
+          <li>Maasmechelen (BE) · Urmond (NL)</li>
+        </ul>
+      </div>
+      <!-- Op mobiel is dit een openingsscherm: enkel het logo, schermvullend.
+           Tikken = naar de tekst scrollen. Op desktop is het gewoon het logo naast de tekst. -->
+      <a class="splash" href="#intro" aria-label="Naar de inhoud">
+      <!-- Hier staat het logo voluit (geen <use>), zodat anime.js de lijnen afzonderlijk kan laten intekenen -->
+        <svg class="logo-big" id="heroLogo" viewBox="0 0 600 600" role="img" aria-label="Logo van Vista Moves">
+          <circle cx="300" cy="300" r="300" fill="#6F130B"/>
+          <rect class="draw" x="163" y="99" width="274" height="402" rx="137" fill="none" stroke="#A52A1E" stroke-width="2"/>
+          <rect class="draw" x="171" y="107" width="258" height="386" rx="129" fill="none" stroke="#A52A1E" stroke-width="1.5"/>
+          <line class="draw" x1="188" y1="268" x2="188" y2="342" stroke="#C2301F" stroke-width="2"/>
+          <line class="draw" x1="412" y1="268" x2="412" y2="342" stroke="#C2301F" stroke-width="2"/>
+          <g class="arc-text" font-family="Poppins, Montserrat, 'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="500" letter-spacing="5" fill="#C2301F">
+            <text text-anchor="middle"><textPath href="#arcTop" startOffset="50%">VISTA MOVES</textPath></text>
+            <text text-anchor="middle"><textPath href="#arcBottom" startOffset="50%">VISTA MOVES</textPath></text>
+          </g>
+          <polyline class="draw mark" points="227,215 300,276 373,215" fill="none" stroke="#E5392A" stroke-width="10" stroke-linejoin="miter" stroke-miterlimit="10"/>
+          <polyline class="draw mark" points="223,390 223,282 300,348 377,282 377,390" fill="none" stroke="#E5392A" stroke-width="11" stroke-linejoin="miter" stroke-miterlimit="10"/>
+        </svg>
+        <span class="splash-hint" aria-hidden="true">Scroll
+          <svg viewBox="0 0 24 24"><path d="M12 4v15M6 13l6 6 6-6"/></svg>
+        </span>
+      </a>
+    </div>
+  </div>
+
+  <section id="focus">
+    <div class="wrap">
+      <div class="head">
+        <span class="kicker">Waar we op trainen</span>
+        <h2>Drie dingen, elke training</h2>
+      </div>
+      <ul class="pillars">
+        <li><strong>Techniek</strong><span>Aanname, dribbel, passing en afwerking. Veel herhaling en veel balcontacten per speler.</span></li>
+        <li><strong>Coördinatie</strong><span>Voetenwerk, evenwicht en snelheid, zodat de techniek ook werkt in een match.</span></li>
+        <li><strong>Vista</strong><span>Kijken voor je de bal krijgt. Het spel lezen en de juiste keuze maken.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="aanbod">
+    <div class="wrap">
+      <div class="head">
+        <span class="kicker">Aanbod</span>
+        <h2>Zo kan je bij ons trainen</h2>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="num">01</span>
+          <h3>Training op maat</h3>
+          <p>Individueel of met een paar spelers. We werken aan de punten waar jouw kind het meest aan heeft.</p>
+        </div>
+        <div class="row">
+          <span class="num">02</span>
+          <h3>Kleine groepjes</h3>
+          <p>Wekelijkse trainingen in kleine groepen, zodat elke speler veel aan de bal is en de trainer iedereen kan bijsturen.</p>
+        </div>
+        <div class="row">
+          <span class="num">03</span>
+          <h3>Winterstop- en zomerstages</h3>
+          <p>Als de competitie stilligt, trainen wij door. Een reeks trainingen op korte tijd, ideaal om een sprong vooruit te maken.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stages">
+    <div class="wrap">
+      <div class="head">
+        <span class="kicker">Stages</span>
+        <h2>Doortrainen als de competitie stilligt</h2>
+        <p class="lede">Twee keer per jaar organiseren we een stage: in de winterstop en in juni, na het seizoen.</p>
+      </div>
+      <div class="camps">
+        <article class="camp">
+          <span class="badge">Binnenkort</span>
+          <h3>Winterstop</h3>
+          <p>Een ideaal moment om aan je techniek te werken. Data, uren en prijs maken we binnenkort bekend via Instagram.</p>
+          <dl class="facts">
+            <dt>Wanneer</dt><dd>Winterstop 2026–2027</dd>
+            <dt>Waar</dt><dd>Grotestraat 147, Maasmechelen</dd>
+            <dt>Plaatsen</dt><dd>Beperkt, kleine groepen</dd>
+          </dl>
+          <a class="btn ghost" href="https://www.instagram.com/vistamoves/">Volg @vistamoves voor de data</a>
+        </article>
+        <article class="camp">
+          <span class="badge past">Vorige editie · juni 2026</span>
+          <h3>Off Season juni</h3>
+          <div class="price">€275 <small>voor 10 trainingen, of €25 per losse training</small></div>
+          <dl class="facts">
+            <dt>Wanneer</dt><dd>Dinsdag en donderdag 17u30–19u00, plus één zondagochtend</dd>
+            <dt>Waar</dt><dd>Grotestraat 147, Maasmechelen</dd>
+            <dt>Inclusief</dt><dd>Vista Moves-kledingpakket t.w.v. €119 bij inschrijving voor de hele maand</dd>
+          </dl>
+          <p>De editie van juni 2027 volgt in het voorjaar.</p>
+        </article>
+      </div>
+      <ul class="bring" aria-label="Mee te brengen">
+        <li>Meebrengen</li>
+        <li>Voetbalschoenen</li>
+        <li>Scheenbeschermers</li>
+        <li>Drinkbus</li>
+        <li>Bal</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="sfeer">
+    <div class="wrap">
+      <div class="head">
+        <span class="kicker">Sfeer</span>
+        <h2>Op het veld</h2>
+      </div>
+      <!--
+        HOE VERVANG JE EEN LEGE TEGEL?
+        Zet het bestand naast index.html (bv. in een map media/) en vervang
+        de hele <figure class="tile empty ..."> door één van deze twee:
+
+        Foto:
+          <figure class="tile wide">
+            <img src="media/training-1.jpg" alt="Korte beschrijving van de foto" loading="lazy">
+            <figcaption>Techniektraining, Maasmechelen</figcaption>
+          </figure>
+
+        Video (speelt automatisch, zonder geluid, in een lus):
+          <figure class="tile wide tall">
+            <video src="media/sfeer.mp4" poster="media/sfeer-poster.jpg" autoplay muted loop playsinline></video>
+          </figure>
+
+        "wide" = twee kolommen breed, "tall" = twee rijen hoog. Laat ze weg voor een kleine tegel.
+        Let op: enkel kinderen tonen van wie de ouders toestemming gaven.
+      -->
+      <div class="gallery">
+        <figure class="tile empty wide tall"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="1"/><path d="M16 10l5-3v10l-5-3"/></svg><span>Sfeervideo training</span></figure>
+        <figure class="tile empty wide"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg><span>Foto groepstraining</span></figure>
+        <figure class="tile empty"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg><span>Foto techniek</span></figure>
+        <figure class="tile empty"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg><span>Foto stage</span></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="trainers">
+    <div class="wrap">
+      <div class="head">
+        <span class="kicker">Trainers</span>
+        <h2>Van speler naar trainer</h2>
+      </div>
+      <div class="coaches">
+        <article class="coach">
+          <img src="mo.jpg" alt="Portret van trainer Mo" width="600" height="598">
+          <span class="role">Hoofdtrainer</span>
+          <h3>Mo</h3>
+          <p>Mohamed Alajdi El Idrissi voetbalt sinds zijn vijfde. Hij volgde zijn jeugdopleiding bij Patro Eisden en op de topsportschool voetbal. Daar leerde hij wat topsport vraagt: discipline, herhaling en oog voor detail. Als papa zag hij langs de zijlijn hoe belangrijk goede technische begeleiding op jonge leeftijd is, en zo werd hij trainer.</p>
+          <blockquote>Jonge voetballers helpen groeien, met techniek als fundament en de juiste topsportmentaliteit.</blockquote>
+        </article>
+        <article class="coach">
+          <img src="niels.jpg" alt="Portret van trainer Niels" width="600" height="598">
+          <span class="role">Hoofdtrainer</span>
+          <h3>Niels</h3>
+          <p>Niels Stouten is al 32 jaar actief in het voetbal. Ook hij komt uit de jeugdopleiding van Patro Eisden en speelde daarna in België en Nederland. Jarenlang zaalvoetbal gaf hem een sterk gevoel voor techniek. Hij is ook trainer van de U7 bij Boorsem Sport.</p>
+          <blockquote>Techniek en plezier staan centraal, maar respect voor elkaar komt op de eerste plaats.</blockquote>
+        </article>
+      </div>
+      <div class="diploma">
+        <strong>UEFA B</strong>
+        <span>Vista Moves werkt met een UEFA B-gediplomeerde trainer.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="ervaringen">
+    <div class="wrap">
+      <div class="head">
+        <span class="kicker">Ervaringen</span>
+        <h2>Wat ouders zeggen</h2>
+      </div>
+      <!--
+        REVIEWS TOEVOEGEN
+        Gebruik alleen echte reviews, met toestemming van de ouder om ze te tonen.
+        Zodra je er hebt: verwijder het blok "reviews-empty" en zet dit erin
+        (één <figure> per review, 3 naast elkaar):
+
+        <div class="reviews">
+          <figure class="review">
+            <blockquote>Letterlijke tekst van de ouder.</blockquote>
+            <figcaption>Voornaam, mama/papa van een speler U8</figcaption>
+          </figure>
+        </div>
+      -->
+      <div class="reviews-empty">
+        <p class="lede">Ervaringen van ouders en spelers vind je in de highlight "Ervaringen" op ons Instagram-profiel.</p>
+        <a class="btn ghost" href="https://www.instagram.com/vistamoves/">Bekijk de ervaringen</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="wrap contact-grid">
+      <div class="stack">
+        <span class="kicker">Contact</span>
+        <h2>Schrijf je in of stel je vraag</h2>
+        <p class="lede">Bel of stuur een bericht via Instagram. Vertel hoe oud je kind is en bij welke ploeg het speelt, dan zoeken we de juiste training.</p>
+        <div class="cta">
+          <a class="btn primary" href="tel:+32478506299">Bel +32 478 50 62 99</a>
+          <a class="btn ghost" href="https://www.instagram.com/vistamoves/">Stuur een DM op Instagram</a>
+        </div>
+      </div>
+      <div class="places">
+        <div class="place"><strong>Maasmechelen</strong><span>Grotestraat 147, België</span></div>
+        <div class="place"><strong>Urmond</strong><span>Nederland</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Vista Moves</span>
+    <span>Instagram: @vistamoves · +32 478 50 62 99</span>
+  </div>
+</footer>
+
+<script>
+/* BURGERMENU: openen/sluiten, sluiten na klik op een link of met Escape */
+(function () {
+  var knop = document.querySelector('.burger');
+  var menu = document.getElementById('menu');
+  function zet(open) {
+    knop.setAttribute('aria-expanded', open);
+    knop.setAttribute('aria-label', open ? 'Menu sluiten' : 'Menu openen');
+    menu.classList.toggle('open', open);
+  }
+  knop.addEventListener('click', function () { zet(knop.getAttribute('aria-expanded') !== 'true'); });
+  menu.addEventListener('click', function (e) { if (e.target.closest('a')) zet(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') zet(false); });
+})();
+</script>
+
+<!-- anime.js v4.5.0 (UMD-build): maakt een globaal object "anime" aan -->
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js"></script>
+<script>
+/*
+  ANIMATIES MET ANIME.JS v4  (https://animejs.com)
+  De UMD-build maakt één globaal object "anime" aan; daar halen we de functies uit.
+  Uitgangspunt: alle inhoud is zichtbaar zonder JavaScript. Laadt anime.js niet,
+  of wil de bezoeker minder beweging (systeeminstelling), dan stopt dit script meteen.
+*/
+(function () {
+  var minderBeweging = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (typeof anime === 'undefined' || minderBeweging) return;
+
+  var animate = anime.animate;                 // één animatie
+  var createTimeline = anime.createTimeline;   // meerdere stappen na elkaar
+  var createDrawable = anime.createDrawable;   // SVG-lijnen laten "intekenen"
+  var onScroll = anime.onScroll;               // animatie koppelen aan de scroll
+  var stagger = anime.stagger;                 // elementen na elkaar laten starten
+
+  /* ------------------------------------------------------------------
+     1. INTRO BIJ HET LADEN: één tijdlijn, alles na elkaar.
+        a) het kleine logo in de navbar
+        b) het grote logo
+        c) de tekst ernaast en eronder
+     ------------------------------------------------------------------ */
+  var utils = anime.utils;
+
+  // De lijnen van beide logo's omzetten naar "tekenbare" lijnen.
+  var navLijnen   = createDrawable('#navLogo .draw:not(.mark)');
+  var navMerk     = createDrawable('#navLogo .mark');
+  var grootLijnen = createDrawable('#heroLogo .draw:not(.mark)');
+  var grootMerk   = createDrawable('#heroLogo .mark');
+
+  // Startstand vóór de tijdlijn begint: alles verborgen, lijnen nog niet getekend.
+  // Zo "flitst" niets even op voordat het aan de beurt is.
+  utils.set(['#navLogo .disc', '.brand-name', '#heroLogo > circle', '#heroLogo .arc-text', '.hero .stack > *'], { opacity: 0 });
+  utils.set([navLijnen, navMerk, grootLijnen, grootMerk].flat(), { draw: '0 0' });
+
+  // Op mobiel (smal scherm) werkt de intro anders: zie stap 1b hieronder.
+  var mobiel = window.matchMedia('(max-width: 860px)').matches;
+
+  if (!mobiel) {
+    /* 1a. DESKTOP: navbarlogo → groot logo → tekst */
+    createTimeline({ defaults: { ease: 'outCubic' } })
+      // a) navbar: cirkel fadet in, omlijning tekent, dan de V en de M, dan de naam
+      .add('#navLogo .disc',  { opacity: [0, 1], scale: [0.8, 1], duration: 300 })
+      .add(navLijnen,         { draw: ['0 0', '0 1'], duration: 300, ease: 'inOutSine' }, '-=100')
+      .add(navMerk,           { draw: ['0 0', '0 1'], duration: 300, ease: 'inOutSine', delay: stagger(120) }, '-=150')
+      .add('.brand-name',     { opacity: [0, 1], x: [-8, 0], duration: 300 }, '-=150')
+      // b) groot logo: zelfde volgorde, iets trager
+      .add('#heroLogo > circle', { opacity: [0, 1], scale: [0.92, 1], duration: 400 }, '-=100')
+      .add(grootLijnen,       { draw: ['0 0', '0 1'], duration: 600, ease: 'inOutSine', delay: stagger(60) }, '-=200')
+      .add(grootMerk,         { draw: ['0 0', '0 1'], duration: 500, ease: 'inOutSine', delay: stagger(180) }, '-=300')
+      .add('#heroLogo .arc-text', { opacity: [0, 1], duration: 300 }, '-=200')
+      // c) tekst: kicker, titel, intro, knoppen, labels — regel per regel
+      .add('.hero .stack > *', { opacity: [0, 1], y: [24, 0], duration: 450, delay: stagger(90) }, '-=250');
+  } else {
+    /* 1b. MOBIEL: eerst enkel het grote logo, schermvullend.
+           De navbar en de tekst komen pas wanneer je naar beneden scrollt
+           (of op het logo tikt); het logo fadet dan weg. */
+
+    // Het navbarlogo staat meteen volledig klaar: het schuift straks mee in beeld.
+    utils.set(['#navLogo .disc', '.brand-name'], { opacity: 1 });
+    utils.set([navLijnen, navMerk].flat(), { draw: '0 1' });
+
+    // Intro: alleen het grote logo tekent zich in, daarna verschijnt de scrollhint.
+    utils.set('.splash-hint', { opacity: 0 });
+    createTimeline({ defaults: { ease: 'outCubic' } })
+      .add('#heroLogo > circle', { opacity: [0, 1], scale: [0.92, 1], duration: 400 })
+      .add(grootLijnen,       { draw: ['0 0', '0 1'], duration: 600, ease: 'inOutSine', delay: stagger(60) }, '-=200')
+      .add(grootMerk,         { draw: ['0 0', '0 1'], duration: 500, ease: 'inOutSine', delay: stagger(180) }, '-=300')
+      .add('#heroLogo .arc-text', { opacity: [0, 1], duration: 300 }, '-=200')
+      .add('.splash-hint',    { opacity: [0, 1], y: [-8, 0], duration: 400 });
+
+    // De scrollhint wipt zachtjes op en neer, zodat duidelijk is dat er meer is.
+    animate('.splash-hint svg', { y: [0, 6], duration: 800, ease: 'inOutSine', alternate: true, loop: true });
+
+    // Logo verdwijnt met de scroll: klein worden en vervagen.
+    // enter 'top top'    = start bij scrollpositie 0 (bovenkant scherm = bovenkant splash)
+    // leave 'top center' = klaar wanneer de bovenkant van het scherm het midden van de splash raakt
+    animate('.splash', {
+      opacity: [1, 0], scale: [1, 0.85],
+      ease: 'linear',
+      autoplay: onScroll({ target: '.splash', enter: 'top top', leave: 'top center', sync: 0.25 })
+    });
+
+    // Navbar schuift van boven binnen terwijl het logo wegvaagt.
+    utils.set('header', { y: '-100%' });
+    animate('header', {
+      y: ['-100%', '0%'],
+      ease: 'outCubic',
+      autoplay: onScroll({ target: '.splash', enter: 'top 25%', leave: 'top 55%', sync: 0.25 })
+    });
+
+    // De tekst van de hero komt per regel binnen, net zoals de rest van de pagina.
+    document.querySelectorAll('.hero .stack > *').forEach(function (el) {
+      animate(el, {
+        opacity: [0, 1], y: [40, 0], duration: 600, ease: 'outCubic',
+        autoplay: onScroll({ target: el, enter: 'bottom top', leave: '80% top', sync: 0.25 })
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------------
+     2. SCROLL-PLAYBACK met onScroll.
+        sync: de scroll bestuurt de animatie. Naar beneden = vooruit,
+        terug naar boven = achteruit. Een getal tussen 0 en 1 maakt het
+        "zacht": de animatie loopt de scroll vloeiend achterna i.p.v. te schokken.
+
+        enter 'bottom top' = start wanneer de BOVENKANT van het element
+                             de ONDERKANT van het scherm raakt.
+        leave '75% top'    = klaar wanneer die bovenkant op 75% van de
+                             schermhoogte staat (dus een kwart boven de onderkant).
+     ------------------------------------------------------------------ */
+  function scrollAnimatie(elementen, metStagger) {
+    animate(elementen, {
+      opacity: { from: 0 },
+      y: { from: 40 },
+      duration: 600,
+      delay: metStagger ? stagger(150) : 0,
+      ease: 'outCubic',
+      autoplay: onScroll({
+        target: elementen[0],          // het eerste element bepaalt het moment
+        enter: 'bottom top',
+        leave: '75% top',
+        sync: 0.25                     // zachte playback (true = exact op de scroll)
+      })
+    });
+  }
+
+  // Elementen die NAAST elkaar staan: als groep, na elkaar (stagger).
+  var naastElkaar = ['.pillars li', '.camps .camp', '.bring li', '.gallery .tile', '.coaches .coach', '.reviews .review'];
+  // Elementen die ONDER elkaar staan: elk zijn eigen animatie, zodat elk
+  // element pas beweegt wanneer het zelf in beeld komt.
+  var onderElkaar = ['section .head', '.rows .row', '.diploma', '.reviews-empty', '.places .place'];
+
+  naastElkaar.forEach(function (selector) {
+    var lijst = Array.prototype.slice.call(document.querySelectorAll(selector));
+    if (lijst.length) scrollAnimatie(lijst, true);
+  });
+  onderElkaar.forEach(function (selector) {
+    document.querySelectorAll(selector).forEach(function (el) { scrollAnimatie([el], false); });
+  });
+
+  /* ------------------------------------------------------------------
+     3. FOTO'S: lichte zoom wanneer je over een tegel met foto of video beweegt.
+     ------------------------------------------------------------------ */
+  document.querySelectorAll('.gallery .tile:not(.empty)').forEach(function (tegel) {
+    var media = tegel.querySelector('img, video');
+    tegel.addEventListener('mouseenter', function () { animate(media, { scale: 1.05, duration: 600, ease: 'outQuad' }); });
+    tegel.addEventListener('mouseleave', function () { animate(media, { scale: 1, duration: 600, ease: 'outQuad' }); });
+  });
+})();
+</script>
+</body>
+</html>
