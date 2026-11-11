@@ -536,7 +536,29 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       createDrawable = anime.createDrawable, onScroll = anime.onScroll,
       stagger = anime.stagger, utils = anime.utils;
 
-  var mobiel = window.matchMedia('(max-width: 860px)').matches;
+  var mq = window.matchMedia('(max-width: 860px)');
+  var mobiel = mq.matches;
+
+  /* Alles wat we aanmaken (animaties, tijdlijnen, startstanden) bewaren we hier.
+     Wisselt het scherm van mobiel naar desktop of omgekeerd (tablet draaien,
+     venster verkleinen), dan draaien we alles terug met revert(): de pagina
+     staat dan gewoon volledig en statisch in de juiste layout. */
+  var terugdraaibaar = [];
+  function bewaar(x) { terugdraaibaar.push(x); return x; }
+  var opgeruimd = false;
+  mq.addEventListener('change', function () {
+    if (opgeruimd) return;
+    opgeruimd = true;
+    terugdraaibaar.forEach(function (x) { try { x.revert(); } catch (e) {} });
+    // draw-lijnen en verborgen elementen expliciet herstellen
+    document.querySelectorAll('#navLogo .draw, #heroLogo .draw').forEach(function (l) {
+      l.style.strokeDasharray = ''; l.style.strokeDashoffset = '';
+      ['pathLength', 'stroke-dasharray', 'stroke-dashoffset', 'draw'].forEach(function (a) { l.removeAttribute(a); });
+    });
+    document.querySelectorAll('[style]').forEach(function (el) {
+      if (el.closest('header, .hero, section')) { el.style.opacity = ''; el.style.transform = ''; el.style.translate = ''; el.style.scale = ''; }
+    });
+  });
 
   /* ---------- Welke elementen animeren met de scroll? ---------- */
   // Naast elkaar: als groep, na elkaar (stagger). Onder elkaar: elk apart.
@@ -553,7 +575,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   var grootLijnen = createDrawable('#heroLogo .draw:not(.mark)');
   var grootMerk   = createDrawable('#heroLogo .mark');
 
-  utils.set(['#navLogo .disc', '.brand-name', '#heroLogo > circle', '#heroLogo .arc-text', '.hero .stack > *', '.splash-hint'], { opacity: 0 });
+  utils.set(['#navLogo .disc', '.brand-name', '#heroLogo > circle', '#heroLogo .arc-text', '.hero .stack > *'], { opacity: 0 });
   utils.set([navLijnen, navMerk, grootLijnen, grootMerk].flat(), { draw: '0 0' });
 
   var alleScrollEls = [];
@@ -567,14 +589,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
   /* ---------- Scroll-animatie voor één element of één groep ---------- */
   function scrollAnimatie(elementen, metStagger) {
-    animate(elementen, {
+    bewaar(animate(elementen, {
       opacity: [0, 1],
       y: [40, 0],
       duration: 600,
       delay: metStagger ? stagger(150) : 0,
       ease: 'outCubic',
       autoplay: onScroll({ target: elementen[0], enter: 'bottom top', leave: '75% top', sync: 0.25 })
-    });
+    }));
   }
 
   // Wordt aangeroepen wanneer de intro klaar is.
@@ -598,11 +620,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
     });
 
-    var intro = createTimeline({
+    var intro = bewaar(createTimeline({
       defaults: { ease: 'outCubic' },
       // Pas als de intro volledig klaar is, worden de scroll-animaties actief.
       onComplete: function () { startScrollAnimaties(alInBeeld); }
-    })
+    }))
       // a) navbarlogo
       .add('#navLogo .disc',  { opacity: [0, 1], scale: [0.8, 1], duration: 300 })
       .add(navLijnen,         { draw: ['0 0', '0 1'], duration: 300, ease: 'inOutSine' }, '-=100')
@@ -629,34 +651,35 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     utils.set([navLijnen, navMerk].flat(), { draw: '0 1' });
     utils.set('header', { y: '-100%' });                           // navbar nog boven het scherm
 
-    createTimeline({
+    utils.set('.splash-hint', { opacity: 0 });
+    bewaar(createTimeline({
       defaults: { ease: 'outCubic' },
       onComplete: function () {
         // De scroll-koppelingen pas starten na de intro.
-        animate('.splash', {
+        bewaar(animate('.splash', {
           opacity: [1, 0], scale: [1, 0.85], ease: 'linear',
           autoplay: onScroll({ target: '.splash', enter: 'top top', leave: 'top center', sync: 0.25 })
-        });
-        animate('header', {
+        }));
+        bewaar(animate('header', {
           y: ['-100%', '0%'], ease: 'outCubic',
           autoplay: onScroll({ target: '.splash', enter: 'top 25%', leave: 'top 55%', sync: 0.25 })
-        });
+        }));
         document.querySelectorAll('.hero .stack > *').forEach(function (el) {
-          animate(el, {
+          bewaar(animate(el, {
             opacity: [0, 1], y: [40, 0], duration: 600, ease: 'outCubic',
             autoplay: onScroll({ target: el, enter: 'bottom top', leave: '80% top', sync: 0.25 })
-          });
+          }));
         });
         startScrollAnimaties([]);
         // De scrollhint wipt zachtjes op en neer.
-        animate('.splash-hint svg', { y: [0, 6], duration: 800, ease: 'inOutSine', alternate: true, loop: true });
+        bewaar(animate('.splash-hint svg', { y: [0, 6], duration: 800, ease: 'inOutSine', alternate: true, loop: true }));
       }
     })
       .add('#heroLogo > circle', { opacity: [0, 1], scale: [0.92, 1], duration: 400 })
       .add(grootLijnen,       { draw: ['0 0', '0 1'], duration: 600, ease: 'inOutSine', delay: stagger(60) }, '-=200')
       .add(grootMerk,         { draw: ['0 0', '0 1'], duration: 500, ease: 'inOutSine', delay: stagger(180) }, '-=300')
       .add('#heroLogo .arc-text', { opacity: [0, 1], duration: 300 }, '-=200')
-      .add('.splash-hint',    { opacity: [0, 1], y: [-8, 0], duration: 400 });
+      .add('.splash-hint',    { opacity: [0, 1], y: [-8, 0], duration: 400 }));
   }
 
   /* ---------- Foto's: lichte zoom bij hover ---------- */
