@@ -190,6 +190,20 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
+<script>
+  /* Vroeg in <head>: verberg wat straks animeert, zodat er niets flitst bij het laden.
+     Vangnet: staat de klasse er na 4 seconden nog (script mislukt), dan alles tonen. */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('intro');
+    setTimeout(function () { document.documentElement.classList.remove('intro'); }, 4000);
+  }
+</script>
+<style>
+  .intro #navLogo, .intro .brand-name, .intro #heroLogo, .intro .splash-hint, .intro .hero .stack > *,
+  .intro .pillars li, .intro .camps .camp, .intro .bring li, .intro .gallery .tile, .intro .coaches .coach,
+  .intro .reviews .review, .intro section .head, .intro .rows .row, .intro .diploma, .intro .reviews-empty,
+  .intro .places .place { opacity: 0; }
+</style>
 </head>
 <body>
 
@@ -495,152 +509,157 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 </script>
 
 <!-- anime.js v4.5.0 (UMD-build): maakt een globaal object "anime" aan -->
-<script src="https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js" onerror="document.documentElement.classList.remove('intro')"></script>
 <script>
 /*
   ANIMATIES MET ANIME.JS v4  (https://animejs.com)
-  De UMD-build maakt één globaal object "anime" aan; daar halen we de functies uit.
-  Uitgangspunt: alle inhoud is zichtbaar zonder JavaScript. Laadt anime.js niet,
-  of wil de bezoeker minder beweging (systeeminstelling), dan stopt dit script meteen.
+
+  Werking in het kort:
+  1. In <head> krijgt <html> de klasse "intro". De CSS verbergt daarmee alles
+     wat straks animeert, nog vóór de pagina getekend wordt (geen flits/hapering).
+  2. INTRO bij het laden, strikt na elkaar:
+       navbarlogo → groot logo → tekst ernaast → alles wat óók al op je scherm
+       staat (bv. "Drie dingen, elke training"), van boven naar onder.
+  3. SCROLL-PLAYBACK voor alles wat bij het laden nog niet in beeld is.
+     Die animaties worden pas actief NA de intro, zodat niets voorloopt.
+  Laadt anime.js niet of wil de bezoeker minder beweging, dan wordt alles
+  gewoon meteen getoond (klasse "intro" gaat weg).
 */
 (function () {
+  var html = document.documentElement;
+  function toonAlles() { html.classList.remove('intro'); }
+
   var minderBeweging = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (typeof anime === 'undefined' || minderBeweging) return;
+  if (typeof anime === 'undefined' || minderBeweging) { toonAlles(); return; }
 
-  var animate = anime.animate;                 // één animatie
-  var createTimeline = anime.createTimeline;   // meerdere stappen na elkaar
-  var createDrawable = anime.createDrawable;   // SVG-lijnen laten "intekenen"
-  var onScroll = anime.onScroll;               // animatie koppelen aan de scroll
-  var stagger = anime.stagger;                 // elementen na elkaar laten starten
+  var animate = anime.animate, createTimeline = anime.createTimeline,
+      createDrawable = anime.createDrawable, onScroll = anime.onScroll,
+      stagger = anime.stagger, utils = anime.utils;
 
-  /* ------------------------------------------------------------------
-     1. INTRO BIJ HET LADEN: één tijdlijn, alles na elkaar.
-        a) het kleine logo in de navbar
-        b) het grote logo
-        c) de tekst ernaast en eronder
-     ------------------------------------------------------------------ */
-  var utils = anime.utils;
+  var mobiel = window.matchMedia('(max-width: 860px)').matches;
 
-  // De lijnen van beide logo's omzetten naar "tekenbare" lijnen.
+  /* ---------- Welke elementen animeren met de scroll? ---------- */
+  // Naast elkaar: als groep, na elkaar (stagger). Onder elkaar: elk apart.
+  var naastElkaar = ['.pillars li', '.camps .camp', '.bring li', '.gallery .tile', '.coaches .coach', '.reviews .review'];
+  var onderElkaar = ['section .head', '.rows .row', '.diploma', '.reviews-empty', '.places .place'];
+
+  // Staat een element bij het laden (deels) op het scherm?
+  function inBeeld(el) { return el.getBoundingClientRect().top < window.innerHeight; }
+
+  /* ---------- Startstand: alles klaarzetten op "verborgen" ---------- */
+  // Vanaf hier neemt anime.js het verbergen over van de CSS-klasse.
   var navLijnen   = createDrawable('#navLogo .draw:not(.mark)');
   var navMerk     = createDrawable('#navLogo .mark');
   var grootLijnen = createDrawable('#heroLogo .draw:not(.mark)');
   var grootMerk   = createDrawable('#heroLogo .mark');
 
-  // Startstand vóór de tijdlijn begint: alles verborgen, lijnen nog niet getekend.
-  // Zo "flitst" niets even op voordat het aan de beurt is.
-  utils.set(['#navLogo .disc', '.brand-name', '#heroLogo > circle', '#heroLogo .arc-text', '.hero .stack > *'], { opacity: 0 });
+  utils.set(['#navLogo .disc', '.brand-name', '#heroLogo > circle', '#heroLogo .arc-text', '.hero .stack > *', '.splash-hint'], { opacity: 0 });
   utils.set([navLijnen, navMerk, grootLijnen, grootMerk].flat(), { draw: '0 0' });
 
-  // Op mobiel (smal scherm) werkt de intro anders: zie stap 1b hieronder.
-  var mobiel = window.matchMedia('(max-width: 860px)').matches;
+  var alleScrollEls = [];
+  naastElkaar.concat(onderElkaar).forEach(function (sel) {
+    document.querySelectorAll(sel).forEach(function (el) { alleScrollEls.push(el); });
+  });
+  utils.set(alleScrollEls, { opacity: 0, y: 40 });
+
+  // De SVG's zelf en de rest mogen nu zichtbaar: de onderdelen staan al op 0.
+  toonAlles();
+
+  /* ---------- Scroll-animatie voor één element of één groep ---------- */
+  function scrollAnimatie(elementen, metStagger) {
+    animate(elementen, {
+      opacity: [0, 1],
+      y: [40, 0],
+      duration: 600,
+      delay: metStagger ? stagger(150) : 0,
+      ease: 'outCubic',
+      autoplay: onScroll({ target: elementen[0], enter: 'bottom top', leave: '75% top', sync: 0.25 })
+    });
+  }
+
+  // Wordt aangeroepen wanneer de intro klaar is.
+  function startScrollAnimaties(uitzonderingen) {
+    naastElkaar.forEach(function (sel) {
+      var lijst = Array.prototype.filter.call(document.querySelectorAll(sel), function (el) { return uitzonderingen.indexOf(el) === -1; });
+      if (lijst.length) scrollAnimatie(lijst, true);
+    });
+    onderElkaar.forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (uitzonderingen.indexOf(el) === -1) scrollAnimatie([el], false);
+      });
+    });
+  }
 
   if (!mobiel) {
-    /* 1a. DESKTOP: navbarlogo → groot logo → tekst */
-    createTimeline({ defaults: { ease: 'outCubic' } })
-      // a) navbar: cirkel fadet in, omlijning tekent, dan de V en de M, dan de naam
+    /* ================= DESKTOP ================= */
+
+    // Elementen die bij het laden al op het scherm staan, in de volgorde van de pagina.
+    var alInBeeld = alleScrollEls.filter(inBeeld).sort(function (a, b) {
+      return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+
+    var intro = createTimeline({
+      defaults: { ease: 'outCubic' },
+      // Pas als de intro volledig klaar is, worden de scroll-animaties actief.
+      onComplete: function () { startScrollAnimaties(alInBeeld); }
+    })
+      // a) navbarlogo
       .add('#navLogo .disc',  { opacity: [0, 1], scale: [0.8, 1], duration: 300 })
       .add(navLijnen,         { draw: ['0 0', '0 1'], duration: 300, ease: 'inOutSine' }, '-=100')
       .add(navMerk,           { draw: ['0 0', '0 1'], duration: 300, ease: 'inOutSine', delay: stagger(120) }, '-=150')
       .add('.brand-name',     { opacity: [0, 1], x: [-8, 0], duration: 300 }, '-=150')
-      // b) groot logo: zelfde volgorde, iets trager
+      // b) groot logo
       .add('#heroLogo > circle', { opacity: [0, 1], scale: [0.92, 1], duration: 400 }, '-=100')
       .add(grootLijnen,       { draw: ['0 0', '0 1'], duration: 600, ease: 'inOutSine', delay: stagger(60) }, '-=200')
       .add(grootMerk,         { draw: ['0 0', '0 1'], duration: 500, ease: 'inOutSine', delay: stagger(180) }, '-=300')
       .add('#heroLogo .arc-text', { opacity: [0, 1], duration: 300 }, '-=200')
-      // c) tekst: kicker, titel, intro, knoppen, labels — regel per regel
+      // c) tekst ernaast, regel per regel
       .add('.hero .stack > *', { opacity: [0, 1], y: [24, 0], duration: 450, delay: stagger(90) }, '-=250');
+
+    // d) alles wat al in beeld staat, één voor één — pas NA de hero-tekst.
+    alInBeeld.forEach(function (el, i) {
+      intro.add(el, { opacity: [0, 1], y: [40, 0], duration: 500 }, i === 0 ? '+=100' : '-=350');
+    });
+
   } else {
-    /* 1b. MOBIEL: eerst enkel het grote logo, schermvullend.
-           De navbar en de tekst komen pas wanneer je naar beneden scrollt
-           (of op het logo tikt); het logo fadet dan weg. */
+    /* ================= MOBIEL ================= */
+    // Eerst enkel het grote logo (openingsscherm). Navbar en tekst komen met de scroll.
 
-    // Het navbarlogo staat meteen volledig klaar: het schuift straks mee in beeld.
-    utils.set(['#navLogo .disc', '.brand-name'], { opacity: 1 });
+    utils.set(['#navLogo .disc', '.brand-name'], { opacity: 1 });   // navbarlogo staat klaar
     utils.set([navLijnen, navMerk].flat(), { draw: '0 1' });
+    utils.set('header', { y: '-100%' });                           // navbar nog boven het scherm
 
-    // Intro: alleen het grote logo tekent zich in, daarna verschijnt de scrollhint.
-    utils.set('.splash-hint', { opacity: 0 });
-    createTimeline({ defaults: { ease: 'outCubic' } })
+    createTimeline({
+      defaults: { ease: 'outCubic' },
+      onComplete: function () {
+        // De scroll-koppelingen pas starten na de intro.
+        animate('.splash', {
+          opacity: [1, 0], scale: [1, 0.85], ease: 'linear',
+          autoplay: onScroll({ target: '.splash', enter: 'top top', leave: 'top center', sync: 0.25 })
+        });
+        animate('header', {
+          y: ['-100%', '0%'], ease: 'outCubic',
+          autoplay: onScroll({ target: '.splash', enter: 'top 25%', leave: 'top 55%', sync: 0.25 })
+        });
+        document.querySelectorAll('.hero .stack > *').forEach(function (el) {
+          animate(el, {
+            opacity: [0, 1], y: [40, 0], duration: 600, ease: 'outCubic',
+            autoplay: onScroll({ target: el, enter: 'bottom top', leave: '80% top', sync: 0.25 })
+          });
+        });
+        startScrollAnimaties([]);
+        // De scrollhint wipt zachtjes op en neer.
+        animate('.splash-hint svg', { y: [0, 6], duration: 800, ease: 'inOutSine', alternate: true, loop: true });
+      }
+    })
       .add('#heroLogo > circle', { opacity: [0, 1], scale: [0.92, 1], duration: 400 })
       .add(grootLijnen,       { draw: ['0 0', '0 1'], duration: 600, ease: 'inOutSine', delay: stagger(60) }, '-=200')
       .add(grootMerk,         { draw: ['0 0', '0 1'], duration: 500, ease: 'inOutSine', delay: stagger(180) }, '-=300')
       .add('#heroLogo .arc-text', { opacity: [0, 1], duration: 300 }, '-=200')
       .add('.splash-hint',    { opacity: [0, 1], y: [-8, 0], duration: 400 });
-
-    // De scrollhint wipt zachtjes op en neer, zodat duidelijk is dat er meer is.
-    animate('.splash-hint svg', { y: [0, 6], duration: 800, ease: 'inOutSine', alternate: true, loop: true });
-
-    // Logo verdwijnt met de scroll: klein worden en vervagen.
-    // enter 'top top'    = start bij scrollpositie 0 (bovenkant scherm = bovenkant splash)
-    // leave 'top center' = klaar wanneer de bovenkant van het scherm het midden van de splash raakt
-    animate('.splash', {
-      opacity: [1, 0], scale: [1, 0.85],
-      ease: 'linear',
-      autoplay: onScroll({ target: '.splash', enter: 'top top', leave: 'top center', sync: 0.25 })
-    });
-
-    // Navbar schuift van boven binnen terwijl het logo wegvaagt.
-    utils.set('header', { y: '-100%' });
-    animate('header', {
-      y: ['-100%', '0%'],
-      ease: 'outCubic',
-      autoplay: onScroll({ target: '.splash', enter: 'top 25%', leave: 'top 55%', sync: 0.25 })
-    });
-
-    // De tekst van de hero komt per regel binnen, net zoals de rest van de pagina.
-    document.querySelectorAll('.hero .stack > *').forEach(function (el) {
-      animate(el, {
-        opacity: [0, 1], y: [40, 0], duration: 600, ease: 'outCubic',
-        autoplay: onScroll({ target: el, enter: 'bottom top', leave: '80% top', sync: 0.25 })
-      });
-    });
   }
 
-  /* ------------------------------------------------------------------
-     2. SCROLL-PLAYBACK met onScroll.
-        sync: de scroll bestuurt de animatie. Naar beneden = vooruit,
-        terug naar boven = achteruit. Een getal tussen 0 en 1 maakt het
-        "zacht": de animatie loopt de scroll vloeiend achterna i.p.v. te schokken.
-
-        enter 'bottom top' = start wanneer de BOVENKANT van het element
-                             de ONDERKANT van het scherm raakt.
-        leave '75% top'    = klaar wanneer die bovenkant op 75% van de
-                             schermhoogte staat (dus een kwart boven de onderkant).
-     ------------------------------------------------------------------ */
-  function scrollAnimatie(elementen, metStagger) {
-    animate(elementen, {
-      opacity: { from: 0 },
-      y: { from: 40 },
-      duration: 600,
-      delay: metStagger ? stagger(150) : 0,
-      ease: 'outCubic',
-      autoplay: onScroll({
-        target: elementen[0],          // het eerste element bepaalt het moment
-        enter: 'bottom top',
-        leave: '75% top',
-        sync: 0.25                     // zachte playback (true = exact op de scroll)
-      })
-    });
-  }
-
-  // Elementen die NAAST elkaar staan: als groep, na elkaar (stagger).
-  var naastElkaar = ['.pillars li', '.camps .camp', '.bring li', '.gallery .tile', '.coaches .coach', '.reviews .review'];
-  // Elementen die ONDER elkaar staan: elk zijn eigen animatie, zodat elk
-  // element pas beweegt wanneer het zelf in beeld komt.
-  var onderElkaar = ['section .head', '.rows .row', '.diploma', '.reviews-empty', '.places .place'];
-
-  naastElkaar.forEach(function (selector) {
-    var lijst = Array.prototype.slice.call(document.querySelectorAll(selector));
-    if (lijst.length) scrollAnimatie(lijst, true);
-  });
-  onderElkaar.forEach(function (selector) {
-    document.querySelectorAll(selector).forEach(function (el) { scrollAnimatie([el], false); });
-  });
-
-  /* ------------------------------------------------------------------
-     3. FOTO'S: lichte zoom wanneer je over een tegel met foto of video beweegt.
-     ------------------------------------------------------------------ */
+  /* ---------- Foto's: lichte zoom bij hover ---------- */
   document.querySelectorAll('.gallery .tile:not(.empty)').forEach(function (tegel) {
     var media = tegel.querySelector('img, video');
     tegel.addEventListener('mouseenter', function () { animate(media, { scale: 1.05, duration: 600, ease: 'outQuad' }); });
